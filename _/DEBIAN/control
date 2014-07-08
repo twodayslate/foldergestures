@@ -1,0 +1,10 @@
+Package: com.twodayslate.foldergestures
+Name: foldergestures
+Depends: mobilesubstrate
+Architecture: iphoneos-arm
+Description: Gestures for folders! Tap to dismiss!
+Maintainer: twodayslate
+Author: twodayslate
+Section: Tweaks
+Version: 0.0.1-18
+Installed-Size: 72
