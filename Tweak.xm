@@ -1,8 +1,19 @@
+@interface SBIcon
+-(BOOL)isFolderIcon;
+@end
+@interface SBFolderIcon : SBIcon
+@end
+
+@interface SBFolder
+@property (assign,nonatomic) SBFolderIcon * icon;  
+@end
+
 @interface SBFolderBackgroundView
 @end
 @interface SBFloatyFolderView : UIView { 
 	SBFolderBackgroundView* _backgroundView;
 }
+@property (nonatomic,retain) SBFolder * folder;  
 -(BOOL)gestureRecognizer:(id)arg1 shouldRecognizeSimultaneouslyWithGestureRecognizer:(id)arg2 ;
 -(BOOL)gestureRecognizer:(id)arg1 shouldReceiveTouch:(id)arg2 ;
 -(BOOL)_tapToCloseGestureRecognizer:(id)arg1 shouldReceiveTouch:(id)arg2 ;
@@ -14,24 +25,22 @@
 @interface SBIconView
 -(id)icon;
 @end
-@interface SBIcon
--(BOOL)isFolderIcon;
-@end
+
 
 static NSLock *sessionlock = [NSLock new];
 static BOOL dontDismiss = false;
 
-%hook SBFloatyFolderView
+static SBIconView *icon = nil;
 
+%hook SBFloatyFolderView
 %new
-- (void)handleUITap:(UITapGestureRecognizer *)sender {
+- (void)handleTap:(UITapGestureRecognizer *)sender {
 	%log;
+	NSLog(@"%@ vs %@",icon,self);
 	if (sender.state == UIGestureRecognizerStateEnded) {
-		[sessionlock lock];
-		if(!dontDismiss) {
+		if((SBIconView *)self != icon) {
 			[self _handleOutsideTap:sender];
 		}
-		[sessionlock unlock];
 	}
 }
 
@@ -39,7 +48,7 @@ static BOOL dontDismiss = false;
 	[sessionlock lock];
 	dontDismiss = false;
 	[sessionlock unlock];
-	UITapGestureRecognizer *bioTap = [[%c(UITapGestureRecognizer) alloc] initWithTarget:self action:@selector(handleUITap:)];
+	UITapGestureRecognizer *bioTap = [[%c(UITapGestureRecognizer) alloc] initWithTarget:self action:@selector(handleTap:)];
 	//bioTap.delegate = self;
 	bioTap.cancelsTouchesInView = NO;
 	bioTap.numberOfTapsRequired = 1; 
@@ -60,31 +69,30 @@ static BOOL dontDismiss = false;
 	NSLog(@"icon = %@",[self icon]);
 	if(![[self icon] isFolderIcon]) {
 		NSLog(@"is NOT a folder");
-		[sessionlock lock];
-		dontDismiss = true;
-		[sessionlock unlock];
 	} else NSLog(@"is a folder");
+	icon = self; 
 	%orig;
 }
--(void)touchesEnded:(id)arg1 withEvent:(id)arg2 {
-	// EWW
-	NSLog(@"icon = %@",[self icon]);
-	if(![[self icon] isFolderIcon]) {
-		NSLog(@"is NOT a folder");
-		[sessionlock lock];
-		dontDismiss = true;
-		[sessionlock unlock];
-	} else NSLog(@"is a folder");
-	%orig;
-}
+// -(void)touchesEnded:(id)arg1 withEvent:(id)arg2 {
+// 	// EWW
+// 	NSLog(@"icon = %@",[self icon]);
+// 	if(![[self icon] isFolderIcon]) {
+// 		NSLog(@"is NOT a folder");
+// 		[sessionlock lock];
+// 		dontDismiss = true;
+// 		[sessionlock unlock];
+// 	} else NSLog(@"is a folder");
+// 	icon = self;
+// 	%orig;
+// }
 %end
 
-%hook SBAppToAppWorkspaceTransaction
--(id)_setupAnimationFrom:(id)afrom to:(id)ato {
-	dontDismiss = false;
-	return %orig;
-}
-%end
+// %hook SBAppToAppWorkspaceTransaction
+// -(id)_setupAnimationFrom:(id)afrom to:(id)ato {
+// 	dontDismiss = false;
+// 	return %orig;
+// }
+// %end
 
 
 
