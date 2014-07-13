@@ -10,36 +10,30 @@
 
 @interface SBFolderBackgroundView
 @end
-@interface SBFloatyFolderView : UIView { 
-	SBFolderBackgroundView* _backgroundView;
-}
+@interface SBFloatyFolderView : UIView
 @property (nonatomic,retain) SBFolder * folder;  
--(BOOL)gestureRecognizer:(id)arg1 shouldRecognizeSimultaneouslyWithGestureRecognizer:(id)arg2 ;
--(BOOL)gestureRecognizer:(id)arg1 shouldReceiveTouch:(id)arg2 ;
--(BOOL)_tapToCloseGestureRecognizer:(id)arg1 shouldReceiveTouch:(id)arg2 ;
 -(void)_handleOutsideTap:(id)arg1 ;
--(id)hitTest:(CGPoint)arg1 withEvent:(id)arg2 ;
--(id)initWithFolder:(id)arg1 orientation:(int)arg2 ;
 @end
 
 @interface SBIconView
 -(id)icon;
 @end
 
-
-// static NSLock *sessionlock = [NSLock new];
-// static BOOL dontDismiss = false;
-
 static SBIconView *icon = nil;
 
 %hook SBFloatyFolderView
 %new
 - (void)tapToClose:(UITapGestureRecognizer *)sender {
-	//%log;
-	//NSLog(@"%@ vs %@",icon,self);
+	// %log;
+	// NSLog(@"%@",[icon icon]);
+	// NSLog(@"%@",[[self folder] icon]);
+	// NSLog(@"comparison = %d",[icon icon] == [[self folder] icon]);
+	// NSLog(@"isFolder = %d",[[[self folder] icon]isFolderIcon]);
+	// NSLog(@"senderView = %@",sender.view);
 	if (sender.state == UIGestureRecognizerStateEnded) {
-		if((SBIconView *)self != icon) {
-			[self _handleOutsideTap:sender];
+		if(icon == nil || [[self folder] icon] == [icon icon]) {
+				[self _handleOutsideTap:sender];
+				icon = nil;
 		}
 	}
 }
@@ -51,48 +45,30 @@ static SBIconView *icon = nil;
 	bioTap.numberOfTapsRequired = 1; 
 	[self addGestureRecognizer:bioTap];
 	[bioTap release];
+	icon = nil;
 	%orig;
 }
 
-// -(void)cleanupAfterClosing {
-// 	%orig;
-// 	//dontDismiss = false;
-// }
+-(void)cleanupAfterClosing {
+	%orig;
+	icon = nil;
+}
 %end
 
 %hook SBIconView
 -(void)touchesBegan:(id)arg1 withEvent:(id)arg2 {
-	//NSLog(@"icon = %@",[self icon]);
-	// if(![[self icon] isFolderIcon]) {
-	// 	NSLog(@"is NOT a folder");
-	// } else NSLog(@"is a folder");
 	icon = self; 
 	%orig;
 }
-// -(void)touchesEnded:(id)arg1 withEvent:(id)arg2 {
-// 	// EWW
-// 	NSLog(@"icon = %@",[self icon]);
-// 	if(![[self icon] isFolderIcon]) {
-// 		NSLog(@"is NOT a folder");
-// 		[sessionlock lock];
-// 		dontDismiss = true;
-// 		[sessionlock unlock];
-// 	} else NSLog(@"is a folder");
-// 	icon = self;
-// 	%orig;
-// }
 %end
 
-// %hook SBAppToAppWorkspaceTransaction
-// -(id)_setupAnimationFrom:(id)afrom to:(id)ato {
-// 	dontDismiss = false;
-// 	return %orig;
-// }
-// %end
-
-
-
-
+%hook SBAppToAppWorkspaceTransaction
+-(id)_setupAnimationFrom:(id)afrom to:(id)ato {
+	%log;
+	icon = nil;
+	return %orig;
+}
+%end
 
 
 @interface SBFolderSettings
@@ -103,8 +79,3 @@ static SBIconView *icon = nil;
 -(BOOL)allowNestedFolders { return YES; }
 -(BOOL)pinchToClose { return YES; }
 %end
-
-
-%ctor {
-	dlopen("/Library/MobileSubstrate/DynamicLibraries/fullfolder.dylib", RTLD_NOW);
-}
