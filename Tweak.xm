@@ -27,16 +27,16 @@
 @end
 
 
-static NSLock *sessionlock = [NSLock new];
-static BOOL dontDismiss = false;
+// static NSLock *sessionlock = [NSLock new];
+// static BOOL dontDismiss = false;
 
 static SBIconView *icon = nil;
 
 %hook SBFloatyFolderView
 %new
-- (void)handleTap:(UITapGestureRecognizer *)sender {
-	%log;
-	NSLog(@"%@ vs %@",icon,self);
+- (void)tapToClose:(UITapGestureRecognizer *)sender {
+	//%log;
+	//NSLog(@"%@ vs %@",icon,self);
 	if (sender.state == UIGestureRecognizerStateEnded) {
 		if((SBIconView *)self != icon) {
 			[self _handleOutsideTap:sender];
@@ -45,10 +45,7 @@ static SBIconView *icon = nil;
 }
 
 -(void)prepareToOpen {
-	[sessionlock lock];
-	dontDismiss = false;
-	[sessionlock unlock];
-	UITapGestureRecognizer *bioTap = [[%c(UITapGestureRecognizer) alloc] initWithTarget:self action:@selector(handleTap:)];
+	UITapGestureRecognizer *bioTap = [[%c(UITapGestureRecognizer) alloc] initWithTarget:self action:@selector(tapToClose:)];
 	//bioTap.delegate = self;
 	bioTap.cancelsTouchesInView = NO;
 	bioTap.numberOfTapsRequired = 1; 
@@ -57,19 +54,18 @@ static SBIconView *icon = nil;
 	%orig;
 }
 
--(void)cleanupAfterClosing {
-	%orig;
-	dontDismiss = false;
-}
+// -(void)cleanupAfterClosing {
+// 	%orig;
+// 	//dontDismiss = false;
+// }
 %end
 
 %hook SBIconView
 -(void)touchesBegan:(id)arg1 withEvent:(id)arg2 {
-	// EWW
-	NSLog(@"icon = %@",[self icon]);
-	if(![[self icon] isFolderIcon]) {
-		NSLog(@"is NOT a folder");
-	} else NSLog(@"is a folder");
+	//NSLog(@"icon = %@",[self icon]);
+	// if(![[self icon] isFolderIcon]) {
+	// 	NSLog(@"is NOT a folder");
+	// } else NSLog(@"is a folder");
 	icon = self; 
 	%orig;
 }
@@ -107,3 +103,8 @@ static SBIconView *icon = nil;
 -(BOOL)allowNestedFolders { return YES; }
 -(BOOL)pinchToClose { return YES; }
 %end
+
+
+%ctor {
+	dlopen("/Library/MobileSubstrate/DynamicLibraries/fullfolder.dylib", RTLD_NOW);
+}
