@@ -53,13 +53,34 @@ static SBIconView *icon = nil;
 	%orig;
 	icon = nil;
 }
+
+-(void)_setCurrentPageIndex:(int)arg1 { 
+	//%log; 
+	//NSLog(@"icon removed");
+	icon = nil; 
+	%orig; 
+}
+-(void)scrollViewDidScroll:(id)arg1 { 
+	//%log; 
+	//NSLog(@"icon removed");
+	icon = nil; 
+	%orig; 
+}
 %end
 
 %hook SBIconView
 -(void)touchesBegan:(id)arg1 withEvent:(id)arg2 {
+	//%log;
 	icon = self; 
+	//NSLog(@"icon changed");
 	%orig;
 }
+// -(void)touchesEnded:(id)arg1 withEvent:(id)arg2 {
+// 	%log;
+// 	icon = nil; 
+// 	%orig;
+// }
+
 %end
 
 %hook SBAppToAppWorkspaceTransaction
